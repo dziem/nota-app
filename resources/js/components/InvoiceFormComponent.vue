@@ -139,6 +139,9 @@ export default {
             this.items[index].base_price = price.base_price
             if (this.notReseller) {
                 this.items[index].price = price.special_price
+                if (this.items[index].quantity >= 20) {
+                    this.items[index].price = price.normal_price
+                }
             } else {
                 if (this.items[index].quantity >= 10 && this.items[index].quantity < 20) {
                     this.items[index].price = price.bulk_price
@@ -153,6 +156,9 @@ export default {
             var price = this.prices.find(x => x.id === id)
             if (this.notReseller) {
                 this.items[index].price = price.special_price
+                if (this.items[index].quantity >= 20) {
+                    this.items[index].price = price.normal_price
+                }
             } else {
                 if (this.items[index].quantity >= 10 && this.items[index].quantity < 20) {
                     this.items[index].price = price.bulk_price
@@ -168,6 +174,9 @@ export default {
                 var price = this.prices.find(x => x.id === row.id)
                 if (this.notReseller) {
                     row.price = price.special_price
+                    if (row.quantity >= 20) {
+                        row.price = price.normal_price
+                    }
                 } else {
                     if (row.quantity >= 10 && row.quantity < 20) {
                         row.price = price.bulk_price

@@ -30,45 +30,47 @@ class InvoiceController extends Controller
         $transaction->created_at = date('Y-m-d H:i:s');
         $transaction->save();
         foreach ($request->item as $item) {
-            $detail = new TransactionDetail();
-            $detail->name = $item['name'];
-            $detail->quantity = $item['qty'];
-            $detail->price = $item['price'];
-            $detail->transaction_id = $transaction->id;
-            $prices = Price::find($item['item_id'])->details()->whereNotNull('stock')->where('stock', '!=' , 0)->orderBy('updated_at')->get();
-            if ($prices->isNotEmpty()) {
-                $price = $prices[0];
-                if ($price->stock == null || $price->stock == 0) {
-                    $price->stock = 0;
-                } else {
-                    if (($price->stock - $item['qty']) >= 0) {
-                        $price->stock = $price->stock - $item['qty'];
-                        $detail->profit = ($item['price'] - $price->base_price) * $item['qty'];
-                    } else {
-                        $detail->quantity = $price->stock;
-                        $detail->profit = ($item['price'] - $price->base_price) * $detail->quantity;
-                        $leftover = $item['qty'] - $price->stock;
-                        $detailToo = new TransactionDetail();
-                        $detailToo->name = $item['name'];
-                        $detailToo->quantity = $leftover;
-                        $detailToo->price = $item['price'];
-                        $detailToo->transaction_id = $transaction->id;
+            if (isset($item['item_id'])) {
+                $detail = new TransactionDetail();
+                $detail->name = $item['name'];
+                $detail->quantity = $item['qty'];
+                $detail->price = $item['price'];
+                $detail->transaction_id = $transaction->id;
+                $prices = Price::find($item['item_id'])->details()->whereNotNull('stock')->where('stock', '!=' , 0)->orderBy('updated_at')->get();
+                if ($prices->isNotEmpty()) {
+                    $price = $prices[0];
+                    if ($price->stock == null || $price->stock == 0) {
                         $price->stock = 0;
-                        if (isset($prices[1])) {
-                            $priceToo = $prices[1];
-                            $priceToo->stock = $priceToo->stock - $leftover;
-                            $priceToo->save();
-                            $detailToo->profit = ($item['price'] - $priceToo->base_price) * $detailToo->quantity;
-                            $detailToo->save();
+                    } else {
+                        if (($price->stock - $item['qty']) >= 0) {
+                            $price->stock = $price->stock - $item['qty'];
+                            $detail->profit = ($item['price'] - $price->base_price) * $item['qty'];
+                        } else {
+                            $detail->quantity = $price->stock;
+                            $detail->profit = ($item['price'] - $price->base_price) * $detail->quantity;
+                            $leftover = $item['qty'] - $price->stock;
+                            $detailToo = new TransactionDetail();
+                            $detailToo->name = $item['name'];
+                            $detailToo->quantity = $leftover;
+                            $detailToo->price = $item['price'];
+                            $detailToo->transaction_id = $transaction->id;
+                            $price->stock = 0;
+                            if (isset($prices[1])) {
+                                $priceToo = $prices[1];
+                                $priceToo->stock = $priceToo->stock - $leftover;
+                                $priceToo->save();
+                                $detailToo->profit = ($item['price'] - $priceToo->base_price) * $detailToo->quantity;
+                                $detailToo->save();
+                            }
                         }
                     }
+                } else {
+                    $price = Price::find($item['item_id'])->details()->orderBy('updated_at')->first();
+                    $detail->profit = ($item['price'] - $price->base_price) * $item['qty'];
                 }
-            } else {
-                $price = Price::find($item['item_id'])->details()->orderBy('updated_at')->first();
-                $detail->profit = ($item['price'] - $price->base_price) * $item['qty'];
+                $detail->save();
+                $price->save();
             }
-            $detail->save();
-            $price->save();
         }
     }
 
